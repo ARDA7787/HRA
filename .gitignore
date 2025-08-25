@@ -162,16 +162,21 @@ cython_debug/
 #*.ipr
 
 # Project-specific
-# Data directories
-data_raw/
-data_csv/
+# Data directories - keep structure but ignore large datasets
+data_raw/*
+!data_raw/README.md
+data_csv/*
+!data_csv/README.md
 *.pkl
 *.h5
 *.hdf5
 
-# Output directories
-outputs/
-logs/
+# Output directories - keep structure but ignore contents
+outputs/*
+!outputs/README.md
+!outputs/*/.gitkeep
+logs/*
+!logs/README.md
 models/
 plots/
 reports/
