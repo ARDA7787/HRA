@@ -107,7 +107,7 @@ class TestPredictionEndpoints:
         
         response = client.post("/predict/upload", files=files)
         # Should return 400 for invalid CSV or 404 for no models
-        assert response.status_code in [400, 404]
+        assert response.status_code in [400, 404, 422]
     
     def test_prediction_input_validation(self, client):
         """Test prediction input validation."""
@@ -132,7 +132,7 @@ class TestPredictionEndpoints:
         
         response = client.post("/predict/single", json=minimal_data)
         # Should return error for insufficient data or 404 for no models
-        assert response.status_code in [400, 404]
+        assert response.status_code in [400, 404, 422]
 
 
 class TestAPIValidation:

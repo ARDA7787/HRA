@@ -205,6 +205,7 @@ class VAEAnomalyDetector:
                 print(f"Epoch {epoch + 1}/{self.epochs}, "
                       f"Loss: {avg_loss:.6f}, Recon: {avg_recon:.6f}, KL: {avg_kl:.6f}")
         
+        self.model.eval()  # Set to evaluation mode after training
         return self
     
     def reconstruction_error(self, X: np.ndarray, batch_size: int = 512) -> np.ndarray:

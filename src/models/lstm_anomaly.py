@@ -247,6 +247,7 @@ class LSTMAnomalyDetector:
             if (epoch + 1) % 20 == 0:
                 print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {avg_loss:.6f}")
         
+        self.model.eval()  # Set to evaluation mode after training
         return self
     
     def reconstruction_error(self, X: np.ndarray, batch_size: int = 64) -> np.ndarray:
