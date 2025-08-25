@@ -150,7 +150,7 @@ class TestVAE:
         scores = self.model.anomaly_score(self.X_test)
         
         assert len(scores) == len(self.X_test)
-        assert all(isinstance(score, (int, float)) for score in scores)
+        assert all(isinstance(score, (int, float, np.number)) for score in scores)
         assert not np.any(np.isnan(scores))
     
     def test_sample_generation(self):
