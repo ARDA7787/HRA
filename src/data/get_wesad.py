@@ -25,8 +25,8 @@ def download_file(url: str, dest_path: Path) -> bool:
     try:
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
-            total = int(r.headers.get('content-length', 0))
-            with open(dest_path, 'wb') as f:
+            total = int(r.headers.get("content-length", 0))
+            with open(dest_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=1024 * 1024):
                     if chunk:
                         f.write(chunk)
@@ -40,22 +40,24 @@ def download_file(url: str, dest_path: Path) -> bool:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--out', type=str, default='data_raw', help='Output directory for raw data')
+    parser.add_argument("--out", type=str, default="data_raw", help="Output directory for raw data")
     args = parser.parse_args()
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # The sciebo link may require interactive browser; provide instruction.
-    zip_path = out_dir / 'WESAD.zip'
+    zip_path = out_dir / "WESAD.zip"
 
     print("Attempting direct download of WESAD. If it fails, follow manual instructions below.")
-    url = 'https://uni-siegen.sciebo.de/s/HGdUkoNlW1Ub0Gx/download'  # typical sciebo pattern
+    url = "https://uni-siegen.sciebo.de/s/HGdUkoNlW1Ub0Gx/download"  # typical sciebo pattern
     ok = download_file(url, zip_path)
 
     if not ok:
         print("\nManual download steps:")
-        print("1) Open: https://www.eti.uni-siegen.de/ubicomp/home/datasets/icmi18/index.html.en?lang=en")
+        print(
+            "1) Open: https://www.eti.uni-siegen.de/ubicomp/home/datasets/icmi18/index.html.en?lang=en"
+        )
         print("2) Click 'ICMI'18 dataset (2.5 GB zipped)'")
         print("3) Download the zip and place it at:", zip_path)
         print("4) Re-run this script to extract.")
@@ -63,14 +65,14 @@ def main():
             sys.exit(1)
 
     # Extract
-    extract_dir = out_dir / 'WESAD'
+    extract_dir = out_dir / "WESAD"
     if extract_dir.exists():
         print(f"Folder already exists: {extract_dir}")
         sys.exit(0)
 
     print("Extracting zip (this may take a while)...")
     try:
-        with zipfile.ZipFile(zip_path, 'r') as zf:
+        with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extractall(extract_dir)
         print("Done. Data at:", extract_dir)
     except zipfile.BadZipFile:
@@ -79,5 +81,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

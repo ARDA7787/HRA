@@ -19,6 +19,7 @@ from datetime import datetime
 
 # Import custom modules
 import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from utils.model_serialization import ModelRegistry
@@ -33,7 +34,7 @@ app = FastAPI(
     description="Real-time anomaly detection for physiological signals (EDA, HR)",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Configure CORS
@@ -63,43 +64,46 @@ except Exception as e:
 # Pydantic models for API
 class PhysiologicalData(BaseModel):
     """Input data for anomaly detection."""
+
     timestamp: List[float] = Field(..., description="Timestamps in seconds")
     eda: List[float] = Field(..., description="EDA values (microsiemens)")
     hr: List[float] = Field(..., description="Heart rate values (BPM)")
-    
+
     class Config:
         schema_extra = {
             "example": {
                 "timestamp": [0.0, 0.25, 0.5, 0.75, 1.0],
                 "eda": [2.1, 2.3, 2.2, 2.4, 2.1],
-                "hr": [72, 74, 73, 75, 72]
+                "hr": [72, 74, 73, 75, 72],
             }
         }
 
 
 class AnomalyResult(BaseModel):
     """Anomaly detection result."""
+
     anomaly_detected: bool = Field(..., description="Whether anomaly was detected")
     anomaly_score: float = Field(..., description="Anomaly score (higher = more anomalous)")
     confidence: float = Field(..., description="Confidence in prediction")
     timestamp: str = Field(..., description="Timestamp of prediction")
-    
+
     class Config:
         schema_extra = {
             "example": {
                 "anomaly_detected": True,
                 "anomaly_score": 0.85,
                 "confidence": 0.92,
-                "timestamp": "2024-01-01T12:00:00Z"
+                "timestamp": "2024-01-01T12:00:00Z",
             }
         }
 
 
 class BatchAnomalyResult(BaseModel):
     """Batch anomaly detection result."""
+
     results: List[AnomalyResult] = Field(..., description="Individual results for each window")
     summary: Dict[str, Any] = Field(..., description="Summary statistics")
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -108,21 +112,22 @@ class BatchAnomalyResult(BaseModel):
                         "anomaly_detected": False,
                         "anomaly_score": 0.23,
                         "confidence": 0.95,
-                        "timestamp": "2024-01-01T12:00:00Z"
+                        "timestamp": "2024-01-01T12:00:00Z",
                     }
                 ],
                 "summary": {
                     "total_windows": 10,
                     "anomalies_detected": 1,
                     "anomaly_rate": 0.1,
-                    "avg_score": 0.35
-                }
+                    "avg_score": 0.35,
+                },
             }
         }
 
 
 class ModelInfo(BaseModel):
     """Model information."""
+
     model_name: str
     version: str
     model_id: str
@@ -133,6 +138,7 @@ class ModelInfo(BaseModel):
 
 class PredictionRequest(BaseModel):
     """Prediction request configuration."""
+
     model_name: Optional[str] = Field(None, description="Model to use (default: production)")
     model_version: Optional[str] = Field("production", description="Model version")
     threshold: Optional[float] = Field(None, description="Custom threshold")
@@ -150,35 +156,32 @@ async def get_model(model_name: str = "ensemble", version: str = "production"):
         raise HTTPException(status_code=404, detail=f"Model not found: {e}")
 
 
-async def preprocess_data(data: PhysiologicalData, 
-                         preprocessing_config: Dict[str, Any] = None) -> np.ndarray:
+async def preprocess_data(
+    data: PhysiologicalData, preprocessing_config: Dict[str, Any] = None
+) -> np.ndarray:
     """Preprocess physiological data."""
     if preprocessing_config is None:
         preprocessing_config = {}
-    
+
     # Convert to pandas series
-    df = pd.DataFrame({
-        'time': data.timestamp,
-        'EDA': data.eda,
-        'HR': data.hr
-    })
-    
+    df = pd.DataFrame({"time": data.timestamp, "EDA": data.eda, "HR": data.hr})
+
     # Interpolate missing values
-    eda = interpolate_missing(df['EDA'])
-    hr = interpolate_missing(df['HR'])
-    
+    eda = interpolate_missing(df["EDA"])
+    hr = interpolate_missing(df["HR"])
+
     # Apply EDA filtering if configured
-    if preprocessing_config.get('filter_eda', True):
-        cutoff = preprocessing_config.get('eda_cutoff', 1.0)
+    if preprocessing_config.get("filter_eda", True):
+        cutoff = preprocessing_config.get("eda_cutoff", 1.0)
         eda = pd.Series(butter_lowpass(eda.values, fs=4.0, cutoff=cutoff))
-    
+
     # Normalize
     eda_z = zscore(eda)
     hr_z = zscore(hr)
-    
+
     # Combine signals
     X = np.vstack([eda_z.values, hr_z.values]).T
-    
+
     return X
 
 
@@ -218,7 +221,7 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "version": "1.0.0",
-        "models_available": len(model_registry.list_models())
+        "models_available": len(model_registry.list_models()),
     }
 
 
@@ -226,31 +229,31 @@ async def health_check():
 async def list_models():
     """List all available models."""
     models_df = model_registry.list_models()
-    
+
     if models_df.empty:
         return []
-    
+
     models = []
     for _, row in models_df.iterrows():
         model_info = ModelInfo(
-            model_name=row['model_name'],
-            version=row['version'],
-            model_id=row['model_id'],
-            is_production=row['is_production'],
-            registered_timestamp=row['registered_timestamp']
+            model_name=row["model_name"],
+            version=row["version"],
+            model_id=row["model_id"],
+            is_production=row["is_production"],
+            registered_timestamp=row["registered_timestamp"],
         )
-        
+
         # Add performance metrics if available
         perf_metrics = {}
-        for metric in ['roc_auc', 'f1', 'precision', 'recall']:
+        for metric in ["roc_auc", "f1", "precision", "recall"]:
             if metric in row and pd.notna(row[metric]):
                 perf_metrics[metric] = float(row[metric])
-        
+
         if perf_metrics:
             model_info.performance_metrics = perf_metrics
-        
+
         models.append(model_info)
-    
+
     return models
 
 
@@ -258,28 +261,28 @@ async def list_models():
 async def predict_single(
     data: PhysiologicalData,
     request_config: PredictionRequest = PredictionRequest(),
-    model_data: tuple = Depends(lambda: get_model())
+    model_data: tuple = Depends(lambda: get_model()),
 ):
     """Predict anomaly for a single time window."""
     try:
         model, metadata = await get_model(
-            request_config.model_name or "ensemble",
-            request_config.model_version
+            request_config.model_name or "ensemble", request_config.model_version
         )
-        
+
         # Preprocess data
         X = await preprocess_data(data, request_config.preprocessing)
-        
+
         if len(X) < 10:  # Need minimum samples
             raise HTTPException(status_code=400, detail="Insufficient data points")
-        
+
         # Extract features if requested
         if request_config.use_features:
             try:
                 from utils.feature_engineering import build_feature_matrix
+
                 window_size = min(len(X), int(30 * 4))  # 30 seconds at 4Hz
                 X_features, _ = build_feature_matrix(X, window_size, window_size)
-                
+
                 if len(X_features) > 0:
                     X = X_features[0:1]  # Use first window
                 else:
@@ -290,35 +293,35 @@ async def predict_single(
                 X = X.flatten().reshape(1, -1)
         else:
             X = X.flatten().reshape(1, -1)
-        
+
         # Get anomaly score
-        if hasattr(model, 'reconstruction_error'):
+        if hasattr(model, "reconstruction_error"):
             score = model.reconstruction_error(X)[0]
-        elif hasattr(model, 'anomaly_score'):
+        elif hasattr(model, "anomaly_score"):
             score = model.anomaly_score(X)[0]
-        elif hasattr(model, 'score'):
+        elif hasattr(model, "score"):
             score = model.score(X)[0]
         else:
             raise HTTPException(status_code=500, detail="Model doesn't support scoring")
-        
+
         # Determine threshold
         threshold = request_config.threshold
         if threshold is None:
-            threshold = metadata.get('threshold', np.percentile([score], 95))
-        
+            threshold = metadata.get("threshold", np.percentile([score], 95))
+
         # Make prediction
         is_anomaly = score >= threshold
-        
+
         # Calculate confidence (simplified)
         confidence = min(0.99, max(0.51, abs(score - threshold) / threshold + 0.5))
-        
+
         return AnomalyResult(
             anomaly_detected=bool(is_anomaly),
             anomaly_score=float(score),
             confidence=float(confidence),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
-        
+
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -326,77 +329,85 @@ async def predict_single(
 
 @app.post("/predict/batch", response_model=BatchAnomalyResult)
 async def predict_batch(
-    data: PhysiologicalData,
-    request_config: PredictionRequest = PredictionRequest()
+    data: PhysiologicalData, request_config: PredictionRequest = PredictionRequest()
 ):
     """Predict anomalies for multiple time windows."""
     try:
         model, metadata = await get_model(
-            request_config.model_name or "ensemble",
-            request_config.model_version
+            request_config.model_name or "ensemble", request_config.model_version
         )
-        
+
         # Preprocess data
         X = await preprocess_data(data, request_config.preprocessing)
-        
+
         if len(X) < 30:  # Need minimum samples
             raise HTTPException(status_code=400, detail="Insufficient data for batch processing")
-        
+
         # Extract features using sliding windows
         if request_config.use_features:
             try:
                 window_size = int(30 * 4)  # 30 seconds at 4Hz
                 step_size = int(window_size * 0.5)  # 50% overlap
                 X_features, _ = build_feature_matrix(X, window_size, step_size)
-                
+
                 if len(X_features) == 0:
                     raise ValueError("No windows extracted")
-                
+
                 X_processed = X_features
             except Exception as e:
                 logger.warning(f"Feature extraction failed: {e}")
                 # Fallback to simple windowing
                 window_size = min(len(X) // 4, 120)
-                X_processed = np.array([X[i:i+window_size].flatten() 
-                                     for i in range(0, len(X)-window_size+1, window_size//2)])
+                X_processed = np.array(
+                    [
+                        X[i : i + window_size].flatten()
+                        for i in range(0, len(X) - window_size + 1, window_size // 2)
+                    ]
+                )
         else:
             # Simple windowing of raw data
             window_size = min(len(X) // 4, 120)
-            X_processed = np.array([X[i:i+window_size].flatten() 
-                                 for i in range(0, len(X)-window_size+1, window_size//2)])
-        
+            X_processed = np.array(
+                [
+                    X[i : i + window_size].flatten()
+                    for i in range(0, len(X) - window_size + 1, window_size // 2)
+                ]
+            )
+
         # Get anomaly scores
-        if hasattr(model, 'reconstruction_error'):
+        if hasattr(model, "reconstruction_error"):
             scores = model.reconstruction_error(X_processed)
-        elif hasattr(model, 'anomaly_score'):
+        elif hasattr(model, "anomaly_score"):
             scores = model.anomaly_score(X_processed)
-        elif hasattr(model, 'score'):
+        elif hasattr(model, "score"):
             scores = model.score(X_processed)
         else:
             raise HTTPException(status_code=500, detail="Model doesn't support scoring")
-        
+
         # Determine threshold
         threshold = request_config.threshold
         if threshold is None:
-            threshold = metadata.get('threshold', np.percentile(scores, 95))
-        
+            threshold = metadata.get("threshold", np.percentile(scores, 95))
+
         # Make predictions
         predictions = scores >= threshold
-        
+
         # Create results
         results = []
         base_time = datetime.now()
-        
+
         for i, (score, is_anomaly) in enumerate(zip(scores, predictions)):
             confidence = min(0.99, max(0.51, abs(score - threshold) / threshold + 0.5))
-            
-            results.append(AnomalyResult(
-                anomaly_detected=bool(is_anomaly),
-                anomaly_score=float(score),
-                confidence=float(confidence),
-                timestamp=(base_time).isoformat()
-            ))
-        
+
+            results.append(
+                AnomalyResult(
+                    anomaly_detected=bool(is_anomaly),
+                    anomaly_score=float(score),
+                    confidence=float(confidence),
+                    timestamp=(base_time).isoformat(),
+                )
+            )
+
         # Summary statistics
         summary = {
             "total_windows": len(results),
@@ -405,11 +416,11 @@ async def predict_batch(
             "avg_score": float(np.mean(scores)),
             "max_score": float(np.max(scores)),
             "min_score": float(np.min(scores)),
-            "threshold_used": float(threshold)
+            "threshold_used": float(threshold),
         }
-        
+
         return BatchAnomalyResult(results=results, summary=summary)
-        
+
     except Exception as e:
         logger.error(f"Batch prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -417,41 +428,35 @@ async def predict_batch(
 
 @app.post("/predict/upload")
 async def predict_upload(
-    file: UploadFile = File(...),
-    request_config: PredictionRequest = PredictionRequest()
+    file: UploadFile = File(...), request_config: PredictionRequest = PredictionRequest()
 ):
     """Upload CSV file and predict anomalies."""
     try:
         # Read uploaded file
         content = await file.read()
-        
+
         # Parse CSV
         try:
-            df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")))
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid CSV file")
-        
+
         # Validate columns
-        required_cols = ['time', 'EDA', 'HR']
+        required_cols = ["time", "EDA", "HR"]
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Missing required columns: {missing_cols}"
-            )
-        
+            raise HTTPException(status_code=400, detail=f"Missing required columns: {missing_cols}")
+
         # Convert to PhysiologicalData
         data = PhysiologicalData(
-            timestamp=df['time'].tolist(),
-            eda=df['EDA'].tolist(),
-            hr=df['HR'].tolist()
+            timestamp=df["time"].tolist(), eda=df["EDA"].tolist(), hr=df["HR"].tolist()
         )
-        
+
         # Use batch prediction
         result = await predict_batch(data, request_config)
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -500,11 +505,7 @@ async def monitoring_dashboard():
 
 
 @app.post("/models/register")
-async def register_model(
-    model_name: str,
-    version: str,
-    is_production: bool = False
-):
+async def register_model(model_name: str, version: str, is_production: bool = False):
     """Register a new model (placeholder - requires actual model file)."""
     # This is a placeholder endpoint for model registration
     # In practice, you'd upload model files and register them
@@ -512,7 +513,7 @@ async def register_model(
         "message": "Model registration endpoint - implementation depends on deployment strategy",
         "model_name": model_name,
         "version": version,
-        "is_production": is_production
+        "is_production": is_production,
     }
 
 
@@ -521,14 +522,14 @@ async def register_model(
 async def startup_event():
     """Initialize API on startup."""
     logger.info("Starting Physiological Anomaly Detection API")
-    
+
     # Setup directories
     if config:
         try:
             config_manager.setup_output_directories()
         except Exception as e:
             logger.warning(f"Could not setup directories: {e}")
-    
+
     # Log available models
     models_df = model_registry.list_models()
     logger.info(f"Loaded {len(models_df)} models")
@@ -544,53 +545,41 @@ async def shutdown_event():
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
     """Handle ValueError exceptions."""
-    return JSONResponse(
-        status_code=400,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.exception_handler(FileNotFoundError)
 async def file_not_found_handler(request, exc):
     """Handle FileNotFoundError exceptions."""
-    return JSONResponse(
-        status_code=404,
-        content={"detail": str(exc)}
-    )
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 def create_app(config_path: Optional[str] = None) -> FastAPI:
     """Create FastAPI app with custom configuration."""
     global config, config_manager
-    
+
     if config_path:
         config_manager = ConfigManager(config_path)
         config = config_manager.config
         config_manager.setup_logging()
-    
+
     return app
 
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Run Anomaly Detection API")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
     parser.add_argument("--config", help="Path to configuration file")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
-    
+
     args = parser.parse_args()
-    
+
     # Load configuration if provided
     if args.config:
         app = create_app(args.config)
-    
+
     # Run server
-    uvicorn.run(
-        "main:app",
-        host=args.host,
-        port=args.port,
-        reload=args.reload,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host=args.host, port=args.port, reload=args.reload, log_level="info")

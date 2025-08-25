@@ -7,7 +7,7 @@ def interpolate_missing(series: pd.Series) -> pd.Series:
     # Linear interpolation, then forward/backward fill
     s = series.copy()
     s = s.replace([np.inf, -np.inf], np.nan)
-    return s.interpolate(method='linear').ffill().bfill()
+    return s.interpolate(method="linear").ffill().bfill()
 
 
 def zscore(series: pd.Series) -> pd.Series:
@@ -23,7 +23,7 @@ def butter_lowpass(data: np.ndarray, fs: float, cutoff: float = 1.0, order: int 
     # Low-pass filter for EDA (reduce motion artifacts)
     nyq = 0.5 * fs
     normal_cutoff = min(cutoff / nyq, 0.99)
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    b, a = butter(order, normal_cutoff, btype="low", analog=False)
     return filtfilt(b, a, data)
 
 
@@ -46,7 +46,9 @@ def build_window_matrix(X: np.ndarray, window_size: int, step: int) -> np.ndarra
     return np.vstack(feats)
 
 
-def inject_synthetic_anomalies(X: np.ndarray, rate: float = 0.02, scale: float = 3.0, rng: np.random.RandomState | None = None) -> np.ndarray:
+def inject_synthetic_anomalies(
+    X: np.ndarray, rate: float = 0.02, scale: float = 3.0, rng: np.random.RandomState | None = None
+) -> np.ndarray:
     # Add sparse spikes to improve robustness for unlabeled data
     if rng is None:
         rng = np.random.RandomState(42)

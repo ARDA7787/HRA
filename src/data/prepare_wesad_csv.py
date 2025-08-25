@@ -25,6 +25,7 @@ except Exception:
 
 # Fallback: try reading from .pkl dataset files (common community mirrors)
 
+
 def load_subject_dict(subject_dir: Path):
     """Load subject dict with keys similar to community WESAD pickle format.
     Expected keys (subset):
@@ -34,16 +35,16 @@ def load_subject_dict(subject_dir: Path):
     This loader tries several common file patterns.
     """
     # Common file names: S2.pkl or S2.p
-    for name in [subject_dir.name + '.pkl', subject_dir.name + '.p']:
+    for name in [subject_dir.name + ".pkl", subject_dir.name + ".p"]:
         p = subject_dir / name
         if p.exists():
-            with open(p, 'rb') as f:
-                return pickle.load(f, encoding='latin1')
+            with open(p, "rb") as f:
+                return pickle.load(f, encoding="latin1")
     # Some zips contain data in .p under parent folder
-    alt = subject_dir.parent / (subject_dir.name + '.p')
+    alt = subject_dir.parent / (subject_dir.name + ".p")
     if alt.exists():
-        with open(alt, 'rb') as f:
-            return pickle.load(f, encoding='latin1')
+        with open(alt, "rb") as f:
+            return pickle.load(f, encoding="latin1")
     raise FileNotFoundError(f"Could not find pickle for {subject_dir}")
 
 
@@ -84,9 +85,9 @@ def map_labels_to_binary(labels: np.ndarray) -> np.ndarray:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--wesad_root', type=str, required=True)
-    ap.add_argument('--subjects', type=int, nargs='+', required=True)
-    ap.add_argument('--out_dir', type=str, required=True)
+    ap.add_argument("--wesad_root", type=str, required=True)
+    ap.add_argument("--subjects", type=int, nargs="+", required=True)
+    ap.add_argument("--out_dir", type=str, required=True)
     args = ap.parse_args()
 
     wesad_root = Path(args.wesad_root)
@@ -94,18 +95,20 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for sid in args.subjects:
-        subj_name = f'S{sid}'
+        subj_name = f"S{sid}"
         subj_dir = wesad_root / subj_name
         if not subj_dir.exists():
             raise FileNotFoundError(f"Subject folder missing: {subj_dir}")
 
         data = load_subject_dict(subj_dir)
         # Prefer wrist signals
-        wrist = data.get('signal', {}).get('wrist', {})
+        wrist = data.get("signal", {}).get("wrist", {})
         if not wrist:
-            raise RuntimeError("Wrist signals missing in pickle; please adjust loader to your structure.")
-        eda = np.asarray(wrist.get('EDA'))
-        bvp = np.asarray(wrist.get('BVP'))
+            raise RuntimeError(
+                "Wrist signals missing in pickle; please adjust loader to your structure."
+            )
+        eda = np.asarray(wrist.get("EDA"))
+        bvp = np.asarray(wrist.get("BVP"))
         if eda is None or bvp is None:
             raise RuntimeError("EDA or BVP missing in wrist signals.")
 
@@ -120,29 +123,31 @@ def main():
         hr_bvp = bvp_to_hr(bvp, fs_bvp=fs_bvp)
         # Resample HR to 4Hz timeline
         # Map each EDA time to nearest BVP index
-        idx = np.minimum(np.searchsorted(t_bvp, t_eda), len(t_bvp)-1)
+        idx = np.minimum(np.searchsorted(t_bvp, t_eda), len(t_bvp) - 1)
         hr_4hz = hr_bvp[idx]
 
         # Labels: attempt to get synchronized label stream; many pickles have 'label'
-        labels = np.asarray(data.get('label'))
+        labels = np.asarray(data.get("label"))
         if labels is not None and labels.size > 0:
             # Labels are often at 700 Hz (chest) or aligned differently; fall back: resample by proportion to EDA length
-            lab_resampled = pd.Series(labels).iloc[::max(1, int(len(labels)/len(eda)))]
-            lab_resampled = lab_resampled.reindex(range(len(eda)), method='ffill')
-            y_bin = map_labels_to_binary(lab_resampled.values[:len(eda)])
+            lab_resampled = pd.Series(labels).iloc[:: max(1, int(len(labels) / len(eda)))]
+            lab_resampled = lab_resampled.reindex(range(len(eda)), method="ffill")
+            y_bin = map_labels_to_binary(lab_resampled.values[: len(eda)])
         else:
             y_bin = np.zeros(len(eda), dtype=int)
 
-        df = pd.DataFrame({
-            'time': t_eda,
-            'EDA': eda.astype(float),
-            'HR': hr_4hz.astype(float),
-            'label': y_bin.astype(int)
-        })
-        out_path = out_dir / f'subject_{subj_name}.csv'
+        df = pd.DataFrame(
+            {
+                "time": t_eda,
+                "EDA": eda.astype(float),
+                "HR": hr_4hz.astype(float),
+                "label": y_bin.astype(int),
+            }
+        )
+        out_path = out_dir / f"subject_{subj_name}.csv"
         df.to_csv(out_path, index=False)
         print(f"Wrote {out_path} with shape {df.shape}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
