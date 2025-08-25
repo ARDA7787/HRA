@@ -137,7 +137,7 @@ class VAEAnomalyDetector:
         self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=15, verbose=False
+            self.optimizer, mode='min', factor=0.5, patience=15
         )
         
         # Track training statistics

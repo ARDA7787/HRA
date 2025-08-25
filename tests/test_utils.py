@@ -42,7 +42,7 @@ class TestPreprocessing:
         result = zscore(data)
         
         assert abs(result.mean()) < 1e-10  # Mean should be ~0
-        assert abs(result.std() - 1.0) < 1e-10  # Std should be ~1
+        assert abs(result.std(ddof=0) - 1.0) < 1e-10  # Std should be ~1 (using ddof=0 like zscore function)
         assert len(result) == len(data)
     
     def test_zscore_constant(self):

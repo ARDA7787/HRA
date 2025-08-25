@@ -13,10 +13,20 @@ def compute_metrics(y_true: np.ndarray, y_score: np.ndarray, y_pred: np.ndarray 
     try:
         auc = roc_auc_score(y_true, y_score)
     except Exception:
-        pass
+        auc = None
+    # Check for invalid case (only one class)
+    if len(np.unique(y_true)) < 2:
+        return {
+            'error': 'Need both normal and anomalous samples for evaluation',
+            'precision': 0.0,
+            'recall': 0.0,
+            'f1': 0.0,
+            'roc_auc': None
+        }
+    
     return {
         'precision': float(prec),
         'recall': float(rec),
         'f1': float(f1),
-        'roc_auc': None if auc is None else float(auc),
+        'roc_auc': None if auc is None or np.isnan(auc) else float(auc),
     }

@@ -4,7 +4,7 @@ from sklearn.ensemble import IsolationForest
 
 
 class IFAnomalyDetector:
-    def __init__(self, contamination: float | None = None, random_state: int = 42):
+    def __init__(self, contamination: float | None = 'auto', random_state: int = 42):
         self.model = IsolationForest(
             n_estimators=200,
             max_samples='auto',

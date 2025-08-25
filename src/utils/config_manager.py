@@ -7,7 +7,7 @@ Handles loading and validation of configuration files.
 import yaml
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 import logging
 from dataclasses import dataclass, field
 from copy import deepcopy

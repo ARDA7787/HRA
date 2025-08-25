@@ -48,6 +48,8 @@ class AEAnomalyDetector:
                 loss = self.loss_fn(xh, xb)
                 loss.backward()
                 self.opt.step()
+        
+        self.model.eval()  # Set to evaluation mode after training
         return self
 
     def reconstruction_error(self, X: np.ndarray, batch_size: int = 512) -> np.ndarray:
