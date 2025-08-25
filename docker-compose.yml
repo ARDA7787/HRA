@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Main application
+  anomaly-detector:
+    build:
+      context: .
+      target: production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config:ro
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./data_csv:/app/data_csv:ro
+    environment:
+      - ANOMALY_API_PORT=8000
+      - ANOMALY_DEVICE=cpu
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development version with hot reload
+  anomaly-detector-dev:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+    environment:
+      - ANOMALY_API_PORT=8000
+      - ANOMALY_DEVICE=cpu
+    command: ["python", "src/api/main.py", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    profiles:
+      - dev
+
+  # Database for storing results (optional)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: anomaly_detection
+      POSTGRES_USER: anomaly
+      POSTGRES_PASSWORD: anomaly123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    profiles:
+      - database
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    profiles:
+      - cache
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    profiles:
+      - monitoring
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    profiles:
+      - monitoring
+
+  # Jupyter notebook for analysis (optional)
+  jupyter:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./notebooks:/app/notebooks
+    command: ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+    profiles:
+      - analysis
+
+volumes:
+  postgres_data:
+  redis_data:
+  grafana_data:
