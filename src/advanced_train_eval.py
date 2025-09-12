@@ -16,6 +16,7 @@ from utils.config_manager import ConfigManager, load_default_config
 from utils.preprocessing import interpolate_missing, zscore, butter_lowpass, sliding_windows
 from utils.feature_engineering import PhysiologicalFeatureExtractor, build_feature_matrix
 from utils.evaluation import AnomalyEvaluator, plot_evaluation_curves, plot_confusion_matrix
+from utils.visualization import plot_anomalies
 from utils.interactive_visualization import InteractiveVisualizer, create_comprehensive_report
 from utils.model_serialization import ModelRegistry
 from utils.metrics import compute_metrics
@@ -117,11 +118,18 @@ def train_single_model(
     logging.info(f"Training {model_type}...")
 
     model_config = model_configs.get(model_type, {})
-    if not model_config.get("enabled", True):
+
+    # Handle both dict and ModelConfig object
+    if hasattr(model_config, 'enabled'):
+        enabled = model_config.enabled
+        params = model_config.params if hasattr(model_config, 'params') else {}
+    else:
+        enabled = model_config.get("enabled", True)
+        params = model_config.get("params", {})
+
+    if not enabled:
         logging.info(f"Model {model_type} is disabled")
         return None
-
-    params = model_config.get("params", {})
 
     try:
         if model_type == "isolation_forest":
@@ -508,6 +516,45 @@ def main():
             output_dir=output_dir,
             config=config,
         )
+
+    # Save static images (PNG) for quick showcasing
+    try:
+        plots_dir = directories.get("plots", output_dir / "plots")
+        plots_dir.mkdir(parents=True, exist_ok=True)
+
+        # 1) Anomalies over time (always available)
+        plot_anomalies(
+            time=time,
+            eda=eda,
+            hr=hr,
+            anomaly_mask=anomaly_mask,
+            out_path=str(plots_dir / "anomalies_over_time.png"),
+            title="Detected Anomalies Over Time",
+        )
+
+        # 2) If labels and ensemble scores available, plot evaluation curves + confusion matrix
+        if y_eval is not None and "ensemble" in models and hasattr(models["ensemble"], "score"):
+            scores = models["ensemble"].score(X_eval)
+            thr = np.percentile(scores, config.thresholds.get("default_percentile", 95))
+            y_pred = (scores >= thr).astype(int)
+
+            plot_evaluation_curves(
+                y_true=y_eval,
+                y_scores=scores,
+                output_path=plots_dir / "roc_pr_curves.png",
+                title="ROC and Precision-Recall Curves (Ensemble)",
+            )
+
+            plot_confusion_matrix(
+                y_true=y_eval,
+                y_pred=y_pred,
+                output_path=plots_dir / "confusion_matrix.png",
+                title="Confusion Matrix (Ensemble)",
+            )
+
+        logging.info(f"Static plots saved to: {plots_dir}")
+    except Exception as e:
+        logging.warning(f"Could not save static visualizations: {e}")
 
     # Save models
     save_models(models, results, config, output_dir)

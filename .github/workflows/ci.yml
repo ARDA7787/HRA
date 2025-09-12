@@ -1,3 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Generate demo data and images
+        run: |
+          python src/data/generate_sample_data.py --duration 2 --fs 4.0 --anomaly_rate 0.15 --output data_csv/sample_demo.csv
+          python src/advanced_train_eval.py --csv data_csv/sample_demo.csv --models isolation_forest autoencoder --ensemble --config config/config.yaml --output_dir outputs/demo
+
+      - name: Upload plot artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-plots
+          path: outputs/plots/*.png
 name: CI/CD Pipeline
 
 on:

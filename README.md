@@ -136,6 +136,35 @@ python src/advanced_train_eval.py \
   --config config/config.yaml
 ```
 
+### 2a. Instant Demo (Generates outputs and images)
+```bash
+# Generate a 2-minute synthetic dataset with anomalies
+python src/data/generate_sample_data.py \
+  --duration 2 \
+  --fs 4.0 \
+  --anomaly_rate 0.15 \
+  --output data_csv/sample_demo.csv
+
+# Train a quick ensemble and produce images + interactive dashboard
+python src/advanced_train_eval.py \
+  --csv data_csv/sample_demo.csv \
+  --models isolation_forest autoencoder \
+  --ensemble \
+  --config config/config.yaml \
+  --output_dir outputs/demo
+
+# Static images for your README are saved to outputs/plots
+ls outputs/plots
+```
+
+Sample outputs you will get:
+
+![Anomalies Over Time](outputs/plots/anomalies_over_time.png)
+
+![ROC and PR Curves](outputs/plots/roc_pr_curves.png)
+
+![Confusion Matrix](outputs/plots/confusion_matrix.png)
+
 ### 3. Start Real-time API
 ```bash
 # Launch web service

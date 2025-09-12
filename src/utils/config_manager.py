@@ -246,26 +246,38 @@ class ConfigManager:
         """Setup logging based on configuration."""
         log_config = self.config.logging
 
+        # Handle both dict and LoggingConfig object
+        if isinstance(log_config, dict):
+            log_file_path = log_config.get("file", "logs/anomaly_detection.log")
+            log_level = log_config.get("level", "INFO")
+            log_format = log_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            console_enabled = log_config.get("console", True)
+        else:
+            log_file_path = log_config.file
+            log_level = log_config.level
+            log_format = log_config.format
+            console_enabled = log_config.console
+
         # Create logs directory
-        log_file = Path(log_config.file)
+        log_file = Path(log_file_path)
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Configure logging
         logging.basicConfig(
-            level=getattr(logging, log_config.level.upper()), format=log_config.format, handlers=[]
+            level=getattr(logging, log_level.upper()), format=log_format, handlers=[]
         )
 
         logger = logging.getLogger()
 
         # File handler
         file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(logging.Formatter(log_config.format))
+        file_handler.setFormatter(logging.Formatter(log_format))
         logger.addHandler(file_handler)
 
         # Console handler
-        if log_config.console:
+        if console_enabled:
             console_handler = logging.StreamHandler()
-            console_handler.setFormatter(logging.Formatter(log_config.format))
+            console_handler.setFormatter(logging.Formatter(log_format))
             logger.addHandler(console_handler)
 
     def setup_output_directories(self) -> Dict[str, Path]:
@@ -276,14 +288,29 @@ class ConfigManager:
             Dictionary of directory paths
         """
         output_config = self.config.output
-        base_dir = Path(output_config.base_dir)
+
+        # Handle both dict and OutputConfig object
+        if isinstance(output_config, dict):
+            base_dir_path = output_config.get("base_dir", "outputs")
+            models_dir = output_config.get("models_dir", "models")
+            plots_dir = output_config.get("plots_dir", "plots")
+            reports_dir = output_config.get("reports_dir", "reports")
+            predictions_dir = output_config.get("predictions_dir", "predictions")
+        else:
+            base_dir_path = output_config.base_dir
+            models_dir = output_config.models_dir
+            plots_dir = output_config.plots_dir
+            reports_dir = output_config.reports_dir
+            predictions_dir = output_config.predictions_dir
+
+        base_dir = Path(base_dir_path)
 
         directories = {
             "base": base_dir,
-            "models": base_dir / output_config.models_dir,
-            "plots": base_dir / output_config.plots_dir,
-            "reports": base_dir / output_config.reports_dir,
-            "predictions": base_dir / output_config.predictions_dir,
+            "models": base_dir / models_dir,
+            "plots": base_dir / plots_dir,
+            "reports": base_dir / reports_dir,
+            "predictions": base_dir / predictions_dir,
         }
 
         # Create directories

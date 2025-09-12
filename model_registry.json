@@ -1,0 +1,98 @@
+{
+  "autoencoder": {
+    "latest": {
+      "model_id": "autoencoder_20250912_191037_93ccdd9b",
+      "is_production": false,
+      "registered_timestamp": "2025-09-12T19:10:37.326884",
+      "metadata": {
+        "config": "ModelConfig(enabled=True, params={'latent_dim': 32, 'lr': 0.001, 'epochs': 40, 'batch_size': 128, 'device': 'auto'})",
+        "training_timestamp": "2025-09-12T19:10:37.326865",
+        "dataset": "physiological_signals",
+        "precision": 1.0,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "roc_auc": 1.0,
+        "version": "latest",
+        "is_production": false,
+        "registered_timestamp": "2025-09-12T19:10:37.326884",
+        "model_name": "autoencoder",
+        "save_timestamp": "2025-09-12T19:10:37.326887",
+        "model_type": "AEAnomalyDetector",
+        "python_version": "3.11",
+        "torch_version": "2.8.0"
+      }
+    }
+  },
+  "isolation_forest": {
+    "latest": {
+      "model_id": "isolation_forest_20250912_191037_1264c226",
+      "is_production": false,
+      "registered_timestamp": "2025-09-12T19:10:37.297805",
+      "metadata": {
+        "config": "ModelConfig(enabled=True, params={'n_estimators': 200, 'max_samples': 'auto', 'contamination': 'auto', 'random_state': 42, 'n_jobs': -1})",
+        "training_timestamp": "2025-09-12T19:10:37.296924",
+        "dataset": "physiological_signals",
+        "precision": 1.0,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "roc_auc": 1.0,
+        "version": "latest",
+        "is_production": false,
+        "registered_timestamp": "2025-09-12T19:10:37.297805",
+        "model_name": "isolation_forest",
+        "save_timestamp": "2025-09-12T19:10:37.297812",
+        "model_type": "IFAnomalyDetector",
+        "python_version": "3.11",
+        "torch_version": null
+      }
+    }
+  },
+  "vae": {
+    "latest": {
+      "model_id": "vae_20250825_222853_0e1684f0",
+      "is_production": false,
+      "registered_timestamp": "2025-08-25T22:28:53.768645",
+      "metadata": {
+        "config": "ModelConfig(enabled=True, params={'latent_dim': 32, 'hidden_dims': [256, 128, 64], 'beta': 1.0, 'lr': 0.001, 'epochs': 100, 'batch_size': 128, 'device': 'auto'})",
+        "training_timestamp": "2025-08-25T22:28:53.768599",
+        "dataset": "physiological_signals",
+        "precision": 1.0,
+        "recall": 0.2727272727272727,
+        "f1": 0.42857142857142855,
+        "roc_auc": 0.999531396438613,
+        "version": "latest",
+        "is_production": false,
+        "registered_timestamp": "2025-08-25T22:28:53.768645",
+        "model_name": "vae",
+        "save_timestamp": "2025-08-25T22:28:53.768649",
+        "model_type": "VAEAnomalyDetector",
+        "python_version": "3.11",
+        "torch_version": "2.8.0"
+      }
+    }
+  },
+  "ensemble": {
+    "latest": {
+      "model_id": "ensemble_20250912_191037_c08c8fce",
+      "is_production": false,
+      "registered_timestamp": "2025-09-12T19:10:37.333457",
+      "metadata": {
+        "config": {},
+        "training_timestamp": "2025-09-12T19:10:37.333432",
+        "dataset": "physiological_signals",
+        "precision": 1.0,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "roc_auc": 1.0,
+        "version": "latest",
+        "is_production": false,
+        "registered_timestamp": "2025-09-12T19:10:37.333457",
+        "model_name": "ensemble",
+        "save_timestamp": "2025-09-12T19:10:37.333460",
+        "model_type": "EnsembleAnomalyDetector",
+        "python_version": "3.11",
+        "torch_version": null
+      }
+    }
+  }
+}

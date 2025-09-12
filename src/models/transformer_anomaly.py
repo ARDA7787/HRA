@@ -113,7 +113,11 @@ class TransformerAnomalyDetector:
         self.lr = lr
         self.epochs = epochs
         self.batch_size = batch_size
-        self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        # Handle device configuration
+        if device == "auto" or device is None:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        else:
+            self.device = device
         
         self.model.to(self.device)
         self.loss_fn = nn.MSELoss()

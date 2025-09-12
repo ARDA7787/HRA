@@ -4,13 +4,14 @@ from sklearn.ensemble import IsolationForest
 
 
 class IFAnomalyDetector:
-    def __init__(self, contamination: float | None = 'auto', random_state: int = 42):
+    def __init__(self, contamination: float | None = 'auto', random_state: int = 42,
+                 n_estimators: int = 200, max_samples: str = 'auto', n_jobs: int = -1, **kwargs):
         self.model = IsolationForest(
-            n_estimators=200,
-            max_samples='auto',
+            n_estimators=n_estimators,
+            max_samples=max_samples,
             contamination=contamination,  # if None, model infers threshold via decision_function
             random_state=random_state,
-            n_jobs=-1,
+            n_jobs=n_jobs,
         )
 
     def fit(self, X: np.ndarray):
