@@ -20,6 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -40,11 +41,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Generate demo data and images
         run: |
+          set -e
           python src/data/generate_sample_data.py --duration 2 --fs 4.0 --anomaly_rate 0.15 --output data_csv/sample_demo.csv
           python src/advanced_train_eval.py --csv data_csv/sample_demo.csv --models isolation_forest autoencoder --ensemble --config config/config.yaml --output_dir outputs/demo
 
@@ -52,4 +55,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: demo-plots
-          path: outputs/plots/*.png
+          path: outputs/demo/plots/*.png
